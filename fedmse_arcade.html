@@ -1,0 +1,1018 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FedMSE Arcade</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: a friendly "network lab" — story strip, game tiles, one game stage with a plain-words helper beside it, glossary at the end. */
+:root{
+  --bg:#eaeef3; --surface:#ffffff; --surface2:#f4f6f9; --ink:#15202b; --muted:#5b6878; --line:#d2d9e2;
+  --accent:#3646c4; --accent-ink:#ffffff; --normal:#13866f; --anom:#d4420c; --warn:#b7791f;
+  --d0:#3646c4; --d1:#13866f; --d2:#d4420c; --d3:#b7791f; --d4:#8a3fb5; --d5:#0f7fb5; --d6:#c2357a; --d7:#5f7d1c; --d8:#6b5a4a;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e131a; --surface:#161d27; --surface2:#1c2531; --ink:#e5eaf0; --muted:#94a1b2; --line:#2b3644;
+  --accent:#8e9bff; --accent-ink:#0e131a; --normal:#3cc3a6; --anom:#ff7b47; --warn:#e8b04a;
+  --d0:#8e9bff; --d1:#3cc3a6; --d2:#ff7b47; --d3:#e8b04a; --d4:#c58cf0; --d5:#4fb8ea; --d6:#f075ae; --d7:#a5c95a; --d8:#bba48e;
+  color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0e131a; --surface:#161d27; --surface2:#1c2531; --ink:#e5eaf0; --muted:#94a1b2; --line:#2b3644;
+  --accent:#8e9bff; --accent-ink:#0e131a; --normal:#3cc3a6; --anom:#ff7b47; --warn:#e8b04a;
+  --d0:#8e9bff; --d1:#3cc3a6; --d2:#ff7b47; --d3:#e8b04a; --d4:#c58cf0; --d5:#4fb8ea; --d6:#f075ae; --d7:#a5c95a; --d8:#bba48e;
+  color-scheme:dark; }
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15.5px;line-height:1.55;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.1}
+h1{font-size:clamp(30px,5vw,46px);font-weight:800;letter-spacing:-0.02em}
+h2{font-size:clamp(22px,3vw,28px);font-weight:800}
+h3{font-size:17px;font-weight:600}
+p{margin:0}
+a{color:var(--accent)}
+.mono{font-family:var(--f-mono)}
+.eyebrow{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+b.n{color:var(--normal)} b.a{color:var(--anom)}
+
+.top{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:flex-end;justify-content:space-between}
+.top .lede{max-width:64ch;color:var(--muted);margin-top:8px}
+.badges{display:flex;align-items:center;gap:10px;font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.pips{display:flex;gap:4px}
+.pip{width:12px;height:12px;border-radius:3px;border:1.5px solid var(--line);background:transparent}
+.pip.on{background:var(--normal);border-color:var(--normal)}
+
+.story{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:860px){.story{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.story{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.panel .num{font-family:var(--f-display);font-weight:800;font-size:28px;line-height:1;color:var(--accent)}
+.panel.bad .num{color:var(--anom)} .panel.good .num{color:var(--normal)}
+.panel p{font-size:14.5px;color:var(--muted)}
+.panel h3{font-size:16px}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+@media (min-width:1040px){.tiles{grid-template-columns:repeat(8,minmax(0,1fr))}}
+.tile{display:flex;flex-direction:column;gap:3px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;color:var(--ink);transition:border-color .15s}
+.tile:hover{border-color:var(--accent)}
+.tile[aria-current="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.tile .k{font-family:var(--f-mono);font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:4px}
+.tile .k .done{color:var(--normal)}
+.tile b{font-family:var(--f-display);font-size:15.5px;font-weight:600;line-height:1.15}
+.tile small{color:var(--muted);font-size:12.5px;line-height:1.3}
+
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:16px;align-items:start}
+@media (max-width:900px){.stage{grid-template-columns:minmax(0,1fr)}}
+.game{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.game header{display:flex;flex-direction:column;gap:6px}
+.game header p{color:var(--muted);max-width:70ch}
+.howto{display:flex;gap:10px;align-items:flex-start;background:var(--surface2);border:1px dashed var(--line);border-radius:10px;padding:10px 12px;font-size:14.5px}
+.howto .lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);white-space:nowrap;padding-top:2px}
+.note{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;font-size:14.5px}
+.note .eq{font-family:var(--f-mono);font-size:12.5px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;overflow-x:auto;white-space:nowrap}
+.note ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.note .analogy{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.note details{border-top:1px solid var(--line);padding-top:8px}
+.note summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--accent)}
+.note details > div{display:flex;flex-direction:column;gap:8px;margin-top:8px;font-size:13.5px}
+
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.good{background:var(--normal);color:var(--surface);border-color:var(--normal)}
+.btn.bad{background:var(--anom);color:var(--surface);border-color:var(--anom)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.seg button{background:var(--surface);border:0;padding:8px 12px;color:var(--muted);font-weight:500}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.hud{display:flex;flex-wrap:wrap;gap:6px 18px;font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums}
+.hud span b{font-weight:600}
+.hud .good{color:var(--normal)} .hud .bad{color:var(--anom)}
+canvas{display:block;width:100%;max-width:100%;height:auto;border-radius:10px;background:var(--surface2);border:1px solid var(--line);touch-action:manipulation}
+.cv-wrap{position:relative}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:color-mix(in srgb,var(--surface) 82%,transparent);border-radius:10px}
+.overlay .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;max-width:460px;display:flex;flex-direction:column;gap:10px}
+@media (max-width:600px){.overlay{position:static;background:none;padding:0;margin-top:10px}.overlay .card{max-width:none;width:100%}}
+.feedback{font-size:14.5px;padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--line);min-height:44px}
+.feedback.ok{border-color:var(--normal)} .feedback.no{border-color:var(--anom)}
+label.chk{display:inline-flex;align-items:center;gap:6px;font-size:14px}
+input[type=range]{accent-color:var(--accent);width:150px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+
+.meter{height:14px;border-radius:7px;background:var(--surface2);border:1px solid var(--line);overflow:hidden;position:relative}
+.meter i{position:absolute;left:0;top:0;bottom:0;background:var(--normal);transition:width .4s}
+.meter i.hot{background:var(--anom)}
+
+.wr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:14px}
+@media (max-width:760px){.wr{grid-template-columns:minmax(0,1fr)}}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{padding:6px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-family:var(--f-mono);font-weight:500;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);white-space:normal}
+td input[type=range]{width:90px}
+@media (max-width:600px){#g2-tbl th,#g2-tbl td{padding:6px 3px}#g2-tbl td input[type=range]{width:68px}}
+.score-big{font-family:var(--f-display);font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.cmp{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.cmp div{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--surface2)}
+.cmp div small{display:block;color:var(--muted);font-size:12px}
+.cmp div b{font-family:var(--f-mono);font-size:17px}
+
+.rb{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media (max-width:700px){.rb{grid-template-columns:minmax(0,1fr)}.rb .built{order:-1}}
+.pool,.built{display:flex;flex-direction:column;gap:6px;min-width:0}
+.card-btn{text-align:left;background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:9px 11px;color:var(--ink);font-size:14.5px}
+.card-btn:hover{border-color:var(--accent)}
+.card-btn.shake{animation:shake .35s;border-color:var(--anom)}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.built li{list-style:none;display:flex;gap:10px;align-items:baseline;padding:8px 10px;border-left:3px solid var(--normal);background:var(--surface2);border-radius:0 8px 8px 0;font-size:14.5px}
+.built li .n{font-family:var(--f-mono);color:var(--normal);font-weight:600}
+.built ol{margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.slot{border:1.5px dashed var(--line);border-radius:8px;padding:9px 11px;color:var(--muted);font-size:13px}
+
+.pb-card{border:1px solid var(--line);background:var(--surface2);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:8px;min-height:120px}
+.pb-card .item{font-family:var(--f-display);font-size:21px;font-weight:600;line-height:1.2}
+.bins{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media (max-width:520px){.bins{grid-template-columns:minmax(0,1fr)}}
+.bin{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:12px;text-align:left;color:var(--ink);display:flex;flex-direction:column;gap:2px}
+.bin:hover{border-color:var(--accent)}
+.bin b{font-family:var(--f-display);font-size:15px}
+.bin small{color:var(--muted);font-size:12.5px}
+.bin .count{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+
+.word{display:flex;flex-wrap:wrap;gap:5px;font-family:var(--f-mono);font-size:24px;font-weight:600}
+.word span{width:30px;height:40px;display:flex;align-items:center;justify-content:center;border-bottom:2.5px solid var(--ink)}
+.word span.gap{border-bottom:0;width:14px}
+.word span.punct{border-bottom:0}
+.word span.miss{color:var(--anom)}
+@media (max-width:480px){.word{gap:3px;font-size:18px}.word span{width:22px;height:34px}}
+.keys{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:4px}
+@media (max-width:560px){.keys{grid-template-columns:repeat(9,minmax(0,1fr))}}
+.keys button{padding:8px 0;border:1px solid var(--line);background:var(--surface2);border-radius:6px;font-family:var(--f-mono);font-weight:600;color:var(--ink)}
+.keys button.hit{background:var(--normal);color:var(--surface);border-color:var(--normal)}
+.keys button.miss{background:transparent;color:var(--muted);text-decoration:line-through}
+.firewall{display:flex;gap:4px}
+.firewall i{flex:1;height:10px;border-radius:2px;background:var(--normal)}
+.firewall i.down{background:var(--anom);opacity:.35}
+.clue{font-size:16.5px}
+
+.mf-card{border:1px solid var(--line);background:var(--surface2);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:10px}
+.mf-card .stmt{font-family:var(--f-display);font-size:22px;font-weight:600;line-height:1.25}
+
+.gloss{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.gloss dl{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px 18px;margin:0}
+.gloss dl div{min-width:0}
+.gloss dt{font-weight:600}
+.gloss dd{margin:0;color:var(--muted);font-size:14px}
+
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div>
+      <div class="eyebrow">Learn a research paper by playing · no AI background needed</div>
+      <h1>FedMSE Arcade</h1>
+      <p class="lede">Eight short games that explain one real research paper, <a href="https://www.jaist.ac.jp/~razvan/publications/fedmse_iot_network_intrusion_detection.pdf" target="_blank" rel="noopener">FedMSE</a> (Nguyen &amp; Beuran, JAIST, 2025). It is about catching hackers on smart‑home networks without spying on anyone. Read the story, then play the games in order.</p>
+    </div>
+    <div class="badges"><span>Badges</span><div class="pips" id="pips"></div><span id="badgeCount">0/8</span></div>
+  </div>
+
+  <section class="story" aria-label="The story in four steps">
+    <div class="panel"><span class="num">1</span><h3>Homes are full of smart devices</h3><p>Doorbells, baby monitors, cameras, thermostats. Each one talks to the internet all day.</p></div>
+    <div class="panel bad"><span class="num">2</span><h3>Hackers hijack them</h3><p>Malware like <b>Mirai</b> takes over weak devices and turns them into a <b>botnet</b>, an army of devices that attack websites together.</p></div>
+    <div class="panel bad"><span class="num">3</span><h3>Watching from one place is risky</h3><p>We could send every home's traffic to one big company to check. But that traffic is private, and copying it all is slow and expensive.</p></div>
+    <div class="panel good"><span class="num">4</span><h3>FedMSE: learn together, keep raw data at home</h3><p>Each building's router learns what <b>normal</b> traffic looks like. Raw traffic stays home. What the router <i>learned</i> goes to a head office, which blends the best lessons together.</p></div>
+  </section>
+
+  <nav class="tiles" id="tiles"></nav>
+
+  <div class="stage">
+    <main id="games"></main>
+    <aside class="note" id="note"></aside>
+  </div>
+
+  <section class="gloss" aria-labelledby="gl-h">
+    <div><div class="eyebrow">Cheat sheet</div><h2 id="gl-h">Words you'll meet</h2></div>
+    <dl>
+      <div><dt>IoT (Internet of Things)</dt><dd>Everyday objects connected to the internet: smart bulbs, cameras, doorbells.</dd></div>
+      <div><dt>Botnet</dt><dd>Many hacked devices controlled by one attacker. Mirai and Gafgyt are two famous ones.</dd></div>
+      <div><dt>Gateway</dt><dd>The router or hub for one building or area. All that area's device traffic passes through it.</dd></div>
+      <div><dt>Server (head office)</dt><dd>A central computer that collects what the gateways learned and blends it.</dd></div>
+      <div><dt>Model / detector</dt><dd>A program that learned from examples and can now make decisions on new data.</dd></div>
+      <div><dt>Federated learning</dt><dd>Training one shared model across many places without moving anyone's raw data.</dd></div>
+      <div><dt>Autoencoder</dt><dd>A "copy machine" network: it squeezes data into a few numbers, then rebuilds it.</dd></div>
+      <div><dt>Anomaly</dt><dd>Something that doesn't fit the normal pattern. Here, likely an attack.</dd></div>
+      <div><dt>Non‑IID data</dt><dd>When different places see very different data, like one building full of cameras and another full of doorbells. (IID = independent and identically distributed.)</dd></div>
+      <div><dt>MSE (mean squared error)</dt><dd>A score for mistakes: take each error, square it, average them. Smaller is better.</dd></div>
+      <div><dt>Centroid</dt><dd>The centre point of a group. Far from the centre of "normal" means suspicious.</dd></div>
+      <div><dt>AUC</dt><dd>A grade for a detector. 100% means it always ranks attacks as more suspicious than normal traffic. 50% is no better than guessing.</dd></div>
+    </dl>
+  </section>
+</div>
+
+<template id="t-copy">
+  <section class="game">
+    <header>
+      <div class="eyebrow">Game 1 · The autoencoder</div>
+      <h2>The Copy Machine</h2>
+      <p>This machine has studied thousands of <b class="n">normal</b> messages. It squeezes each new message down to just 2 numbers, then tries to rebuild it. Normal messages come back almost perfect. Attacks come back wrong, because the machine never learned their shape.</p>
+    </header>
+    <div class="howto"><span class="lbl">How to play</span><span>Press <b>Run the copy machine</b>. Compare the original (left) with the copy (right). If the copy is badly off, it's probably an intruder.</span></div>
+    <div class="hud" id="c-hud"></div>
+    <canvas id="c-cv" width="700" height="300" style="aspect-ratio:700/300"></canvas>
+    <div><div class="row" style="justify-content:space-between"><span class="eyebrow">Copy error (how different the copy is)</span><span class="mono" id="c-errv">—</span></div><div class="meter"><i id="c-meter" style="width:0%"></i></div></div>
+    <div class="row">
+      <button class="btn primary" id="c-run">Run the copy machine</button>
+      <button class="btn good" id="c-norm" disabled>Looks normal</button>
+      <button class="btn bad" id="c-att" disabled>Intruder!</button>
+      <button class="btn" id="c-next" hidden>Next message</button>
+    </div>
+    <div class="feedback" id="c-fb">A new message has arrived at the gateway.</div>
+  </section>
+</template>
+
+<template id="t-guard">
+  <section class="game">
+    <header>
+      <div class="eyebrow">Game 2 · The squeezed map</div>
+      <h2>Spot the Intruder</h2>
+      <p>The 2 numbers from the copy machine give every message a spot on a map. Normal messages should gather around the centre ✚. Anything far away is suspicious.</p>
+    </header>
+    <div class="howto"><span class="lbl">How to play</span><span>Grey dots are new messages. <b>Tap the ones you think are attacks</b> before their timer runs out. Play once with the basic machine, then once with the Shrink machine.</span></div>
+    <div class="row">
+      <div class="seg" role="group" aria-label="Machine">
+        <button id="g1-ae" aria-pressed="true">Basic copy machine</button>
+        <button id="g1-sae" aria-pressed="false">Shrink copy machine</button>
+      </div>
+      <button class="btn primary" id="g1-start">Start round</button>
+    </div>
+    <div class="row">
+      <label class="chk"><input type="checkbox" id="g1-auto"> Auto‑guard: flag everything outside the circle</label>
+      <input type="range" id="g1-r" min="20" max="180" value="70" aria-label="Circle size"><span class="mono" id="g1-rv">70</span>
+    </div>
+    <div class="hud" id="g1-hud"></div>
+    <div class="cv-wrap">
+      <canvas id="g1-cv" width="640" height="420" style="aspect-ratio:640/420"></canvas>
+      <div class="overlay" id="g1-over" hidden><div class="card" id="g1-sum"></div></div>
+    </div>
+    <div class="legend"><span><i style="background:var(--muted)"></i>new message (hidden)</span><span><i style="background:var(--normal)"></i>was normal</span><span><i style="background:var(--anom)"></i>was an attack</span><span>✚ origin (0,0), the centre of normal</span></div>
+  </section>
+</template>
+
+<template id="t-deal">
+  <section class="game">
+    <header>
+      <div class="eyebrow">Game 3 · Different buildings, different data</div>
+      <h2>Fair or Lopsided?</h2>
+      <p>The researchers spread the traffic of 9 real devices across 10 buildings. Sometimes every building gets the same mix. Sometimes one building gets mostly baby‑monitor traffic and another gets mostly doorbells. That lopsided case is much harder.</p>
+    </header>
+    <div class="howto"><span class="lbl">How to play</span><span>Move the slider and press <b>Deal data</b>. Make one <b>even</b> network and one <b>very lopsided</b> network to earn the badge.</span></div>
+    <div class="row">
+      <label class="chk">Lopsided <input type="range" id="g7-a" min="0" max="100" value="40" aria-label="How evenly data is shared"> Even</label>
+      <button class="btn primary" id="g7-deal">Deal data</button>
+    </div>
+    <div class="hud" id="g7-hud"></div>
+    <canvas id="g7-cv" width="680" height="320" style="aspect-ratio:680/320"></canvas>
+    <div class="legend" id="g7-leg"></div>
+    <div class="feedback" id="g7-fb"></div>
+  </section>
+</template>
+
+<template id="t-weigh">
+  <section class="game">
+    <header>
+      <div class="eyebrow">Game 4 · Blending the lessons</div>
+      <h2>Who Should We Trust?</h2>
+      <p>Five buildings each trained their own detector. The head office blends them into one team detector. Think of a group project: do you trust the student who read the most pages, or the one who scored best on the practice test?</p>
+    </header>
+    <div class="howto"><span class="lbl">How to play</span><span>Each circle is one building's detector. The bullseye is a perfect detector. <b>Move the trust sliders</b> to pull the team dart (◆) to the bullseye. Then reveal the two official rules.</span></div>
+    <div class="row">
+      <div class="seg" role="group" aria-label="Situation" id="g2-scen"></div>
+      <button class="btn" id="g2-eq">Trust everyone equally</button>
+    </div>
+    <div class="wr">
+      <canvas id="g2-cv" width="440" height="440" style="aspect-ratio:1/1"></canvas>
+      <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+        <div class="tbl-wrap"><table id="g2-tbl"></table></div>
+        <div><div class="eyebrow">Team detector score (game version of AUC)</div><div class="score-big" id="g2-you">—</div></div>
+        <div class="row">
+          <button class="btn" id="g2-fa">Rule A: trust the biggest</button>
+          <button class="btn" id="g2-ms">Rule B: trust fewest mistakes</button>
+        </div>
+        <div class="cmp" id="g2-cmp"></div>
+      </div>
+    </div>
+    <div class="feedback" id="g2-fb"></div>
+  </section>
+</template>
+
+<template id="t-round">
+  <section class="game">
+    <header>
+      <div class="eyebrow">Game 5 · Putting it together</div>
+      <h2>Teamwork Round</h2>
+      <p>Federated learning happens in rounds, like a relay. Put the steps of one round in order. Then put the steps a building follows to catch an intruder in order.</p>
+    </header>
+    <div class="howto"><span class="lbl">How to play</span><span>Tap the step that comes next. Watch out: two of the cards are things FedMSE never does.</span></div>
+    <div class="hud" id="g3-hud"></div>
+    <div class="feedback" id="g3-fb">Start with whatever the head office does first.</div>
+    <div class="rb">
+      <div class="pool"><div class="eyebrow">Shuffled steps</div><div id="g3-pool" style="display:flex;flex-direction:column;gap:6px"></div></div>
+      <div class="built"><div class="eyebrow" id="g3-builttitle">Your sequence</div><ol id="g3-built"></ol></div>
+    </div>
+    <div class="row"><button class="btn" id="g3-reset">Restart</button></div>
+  </section>
+</template>
+
+<template id="t-border">
+  <section class="game">
+    <header>
+      <div class="eyebrow">Game 6 · Privacy</div>
+      <h2>What Leaves the Building?</h2>
+      <p>The whole point of FedMSE is that private data stays home. For each item, decide where it goes.</p>
+    </header>
+    <div class="howto"><span class="lbl">How to play</span><span>Read the card, then tap one of the three boxes.</span></div>
+    <div class="hud" id="g4-hud"></div>
+    <div class="pb-card" id="g4-card"></div>
+    <div class="feedback" id="g4-fb">Pick a box.</div>
+    <div class="bins">
+      <button class="bin" data-bin="stay"><b>Stays in the building</b><small>Never leaves the local router</small><span class="count" id="g4-c-stay">0</span></button>
+      <button class="bin" data-bin="send"><b>Sent to head office</b><small>Goes over the internet</small><span class="count" id="g4-c-send">0</span></button>
+      <button class="bin" data-bin="none"><b>Not needed at all</b><small>FedMSE works without it</small><span class="count" id="g4-c-none">0</span></button>
+    </div>
+  </section>
+</template>
+
+<template id="t-decode">
+  <section class="game">
+    <header>
+      <div class="eyebrow">Game 7 · Vocabulary</div>
+      <h2>Word Hunt</h2>
+      <p>Guess the word from the clue, one letter at a time. Each wrong letter breaks a piece of the firewall. Six wrong letters and the hacker gets in.</p>
+    </header>
+    <div class="howto"><span class="lbl">How to play</span><span>Tap letters, or type on your keyboard. Stuck? Use a hint, but it costs one firewall piece.</span></div>
+    <div class="hud" id="g5-hud"></div>
+    <div class="firewall" id="g5-fw"></div>
+    <div class="clue" id="g5-clue"></div>
+    <div class="word" id="g5-word"></div>
+    <div class="keys" id="g5-keys"></div>
+    <div class="feedback" id="g5-fb">Guess a letter.</div>
+    <div class="row"><button class="btn" id="g5-hint">Hint (costs 1 piece)</button><button class="btn primary" id="g5-next" hidden>Next word</button></div>
+  </section>
+</template>
+
+<template id="t-myth">
+  <section class="game">
+    <header>
+      <div class="eyebrow">Game 8 · Final check</div>
+      <h2>Myth or Fact?</h2>
+      <p>Ten statements about the paper. Some are true. Some are common mix‑ups. Each answer comes with a short explanation.</p>
+    </header>
+    <div class="hud" id="mf-hud"></div>
+    <div class="mf-card" id="mf-card"></div>
+    <div class="row"><button class="btn bad" id="mf-myth">Myth</button><button class="btn good" id="mf-fact">Fact</button><button class="btn primary" id="mf-next" hidden>Next</button></div>
+    <div class="feedback" id="mf-fb">Make your call.</div>
+  </section>
+</template>
+
+<script>
+(function(){
+"use strict";
+const $=(s,r=document)=>r.querySelector(s);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const gauss=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function prepCanvas(cv){
+  if(!cv._W){cv._W=+cv.getAttribute("width");cv._H=+cv.getAttribute("height")}
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.width=cv._W*dpr;cv.height=cv._H*dpr;
+  const ctx=cv.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);return ctx;
+}
+function evPos(cv,e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*cv._W,y:(e.clientY-r.top)/r.height*cv._H}}
+
+const GAMES=[
+  {id:"copy",tpl:"t-copy",name:"The Copy Machine",sub:"What an autoencoder does"},
+  {id:"guard",tpl:"t-guard",name:"Spot the Intruder",sub:"Far from normal = suspicious"},
+  {id:"deal",tpl:"t-deal",name:"Fair or Lopsided?",sub:"Why buildings differ"},
+  {id:"weigh",tpl:"t-weigh",name:"Who Should We Trust?",sub:"The paper's big idea"},
+  {id:"round",tpl:"t-round",name:"Teamwork Round",sub:"Steps in order"},
+  {id:"border",tpl:"t-border",name:"What Leaves the Building?",sub:"Privacy sorting"},
+  {id:"decode",tpl:"t-decode",name:"Word Hunt",sub:"Learn the key words"},
+  {id:"myth",tpl:"t-myth",name:"Myth or Fact?",sub:"Final quiz"}
+];
+const NG=GAMES.length;
+let badges={};
+try{badges=JSON.parse(localStorage.getItem("fedmse-badges-v2")||"{}")||{}}catch(e){badges={}}
+function award(id){if(badges[id])return;badges[id]=1;try{localStorage.setItem("fedmse-badges-v2",JSON.stringify(badges))}catch(e){}renderBadges();renderTiles()}
+function renderBadges(){
+  $("#pips").innerHTML=GAMES.map(g=>`<span class="pip${badges[g.id]?" on":""}" title="${esc(g.name)}"></span>`).join("");
+  $("#badgeCount").textContent=GAMES.filter(g=>badges[g.id]).length+"/"+NG;
+}
+
+const NOTES={
+copy:`<div class="eyebrow">In plain words</div><h3>An autoencoder is a copy machine with a tiny middle</h3>
+<div class="analogy">Imagine describing a friend's face to a sketch artist using only <b>2 words</b>. If your friend looks like most people, the sketch is close. If they have something very unusual, 2 words aren't enough and the sketch comes out wrong.</div>
+<ul><li><b>Encoder</b> = the squeezing half (message → 2 numbers).</li><li><b>Decoder</b> = the rebuilding half (2 numbers → copy).</li><li><b>Copy error</b> = how different the copy is. A big error means "I've never seen anything like this", so it's likely an attack.</li></ul>
+<p>Because it only needs <b>normal</b> examples to learn, it can in principle catch brand‑new attacks nobody has labelled yet.</p>
+<p class="src">The 8 bars and the two attack shapes are simplified for the game. Real Mirai and Gafgyt can both scan and flood.</p>
+<details><summary>For the curious: what the paper says</summary><div><p>Training makes the copy error as small as possible on normal traffic:</p><div class="eq">error = average of (original − copy)²</div><p>In the real dataset (N‑BaIoT), each record is not one message but a summary of recent traffic, made of 115 statistics. The middle layer holds about 1 + √115 ≈ 12 numbers (the paper's rule of thumb). Section 2.2, Eq. 1–2, Section 5.1.2.</p></div></details>`,
+guard:`<div class="eyebrow">In plain words</div><h3>A map where "normal" lives in the middle</h3>
+<div class="analogy">Picture a school playground. Students cluster near the centre. Someone standing far out by the fence at night is worth a second look. The <b>centroid</b> is the centre of the crowd. The guard only checks <b>distance from the centre</b>.</div>
+<ul><li><b>Basic machine:</b> normal messages spread into a big, off‑centre blob. Attacks land inside it, so they hide.</li><li><b>Shrink machine:</b> during training it gets a penalty for putting normal messages far from the origin (0,0), so they huddle in a tight ball there. Now attacks stand out.</li></ul>
+<p>Fair to the basic machine: in the paper it spots attacks by its <b>copy error</b> (Game 1), not by this map, and on even networks that works very well (about 99%). The Shrink map helps most when buildings are lopsided.</p>
+<details><summary>For the curious: what the paper says</summary><div><div class="eq">loss = copy error + λ × (distance from origin)²,&nbsp; λ = 10</div><p>This is the <b>Shrink Autoencoder (SAE)</b>. After training, the decoder is thrown away and the <b>Centroid (CEN)</b> detector scores each message by its distance from the centre of the normal training points, which the shrink penalty places right next to the origin. Together: <b>SAE‑CEN</b>. The real map has about 12 dimensions; the paper's Fig. 8 squashes it to 2D and 3D to draw it. Section 4.1, Fig. 4, Fig. 8.</p></div></details>`,
+deal:`<div class="eyebrow">In plain words</div><h3>Not every building sees the same traffic</h3>
+<div class="analogy">One building is a hospital full of baby monitors. Another is an office full of security cameras. Each router learns a different idea of "normal". This mismatch is called <b>non‑IID data</b>, and it's the main thing that confuses federated learning.</div>
+<ul><li><b>Even split:</b> every building's detector learns roughly the same thing. Easy.</li><li><b>Lopsided split:</b> detectors learn very different things, and some buildings hold far more data than others.</li></ul>
+<details><summary>For the curious: what the paper says</summary><div><p>The slider controls a <b>Dirichlet distribution</b> with a setting called α. The paper used α = 1000 (even, "low non‑IID") and α = 0.1995 (lopsided, "high non‑IID"). They measured the mismatch with the Jensen–Shannon distance: 0.01 versus 0.83. Our mismatch score is a similar idea but not the same number. When testing, the researchers also added new devices to some buildings, to mimic a network that changes over time. Section 5.1.1, Fig. 5.</p></div></details>`,
+weigh:`<div class="eyebrow">In plain words</div><h3>Trust the best student, not the busiest one</h3>
+<div class="analogy"><b>Rule A (FedAvg, the old way):</b> trust each building in proportion to how much data it has. Like trusting whoever read the most pages.<br><br><b>Rule B (MSEAvg, this paper's idea):</b> give every building's detector the same small practice test of normal messages. Fewer mistakes means more trust.</div>
+<p>When buildings are similar, both rules work. When they're lopsided, the biggest building can drag the team the wrong way. Rule B reduces that problem. In the paper its main effect was making results <b>steadier</b> across buildings. Most of the accuracy gain came from the Shrink machine (Game 2).</p>
+<details><summary>For the curious: what the paper says</summary><div><div class="eq">trust = 1 ÷ MSE&nbsp;&nbsp; team = Σ trust × detector ÷ Σ trust</div><p>The paper calls "trust" the <b>update weight</b> αᵢ. The practice test is the <b>development dataset</b>: the same amount of processed normal traffic from each gateway, collected once before training. MSE squares each error, so bad detectors lose trust fast. Section 4.2, Eq. 5–6. The dartboard is a simplified picture, not real model weights, and it makes the gap between the rules bigger than in the paper so the idea is easy to see. With the Shrink machine, the paper's high non‑IID results were: Rule A 96.93 ± 0.70, FedProx 97.28 ± 0.84, Rule B 97.30 ± 0.49 (Table 2b).</p></div></details>`,
+round:`<div class="eyebrow">In plain words</div><h3>One round = send, practise, report, blend, share</h3>
+<div class="analogy">Like a teacher handing out a worksheet, students doing it at home, handing back answers (not their diaries), the teacher combining the best answers, and giving everyone the improved sheet.</div>
+<ul><li>Only <b>half</b> of the buildings join each round. That saves energy, and it's enough.</li><li>The paper repeats this for up to <b>20 rounds</b>, stopping early once the team detector stops improving.</li><li>To catch intruders, a building keeps only the squeezing half and measures distance from the centre.</li></ul>
+<details><summary>For the curious: what the paper says</summary><div><p>Steps follow Fig. 1 and Algorithms 1–2. Local training uses the Adam optimiser, batch size 12, learning rate 0.00001, up to 100 local epochs with early stopping.</p></div></details>`,
+border:`<div class="eyebrow">In plain words</div><h3>Share the lesson, keep the diary</h3>
+<div class="analogy">Network traffic is like a diary: it shows which devices you own, when you're home, and sometimes personal data. FedMSE never ships the raw diary. Each round it ships what the detector learned, which is a long list of numbers.</div>
+<ul><li>Raw traffic and addresses stay home.</li><li>Detector settings ("weights") go to head office.</li><li>Once, before training, each building also shares the same amount of <b>processed</b> normal traffic (summary numbers, not raw packets). Head office uses it as the practice test.</li><li>Labelled attack examples aren't needed at all.</li></ul>
+<details><summary>For the curious: what the paper says</summary><div><p>This is why the method is called <b>semi‑supervised federated learning</b>: semi‑supervised because it learns from normal data only, federated because data stays on the gateways. Sections 1, 3, 4.2.</p></div></details>`,
+decode:`<div class="eyebrow">Why words matter</div><h3>Read the paper with these</h3>
+<p>Every word in this game appears in the paper. Once you know them, the paper's summary reads like a normal sentence:</p>
+<div class="analogy">"A <b>federated</b> approach where each <b>gateway</b> trains a <b>Shrink</b> <b>autoencoder</b> on <b>normal</b> traffic, and the <b>server</b> blends them, giving more <b>weight</b> to those with a smaller <b>error</b>."</div>
+<p>The cheat sheet at the bottom of the page has all the definitions.</p>`,
+myth:`<div class="eyebrow">The results, simply</div><h3>What the paper found</h3>
+<ul><li>On <b>lopsided</b> networks, FedMSE scored about <b>97.3%</b> (AUC). The older approach scored about <b>94%</b>.</li><li>Most of that gain comes from the <b>Shrink autoencoder + centroid</b> detector. The MSEAvg trust rule adds a little accuracy and makes results more <b>consistent</b> across buildings (spread ±0.49 instead of ±2.90).</li><li>Using only <b>half</b> the buildings per round was enough.</li><li>It kept working as the network grew to <b>50 buildings</b>.</li><li>On <b>even</b> networks, the simple basic autoencoder was already good enough.</li></ul>
+<div class="eyebrow">Limits the authors point out</div><ul><li>Tested on one dataset with only two botnets.</li><li>A simulated network, not a real deployment yet.</li><li>Settings couldn't be tuned without attack data, and the method is sensitive to them.</li><li>Buildings are picked at random each round; smarter picking is future work.</li><li>MSEAvg adds extra work for the head office.</li></ul>
+<details><summary>For the curious: the exact numbers</summary><div><p>High non‑IID, 10 gateways: AE + FedProx 93.98 ± 2.90 → SAE‑CEN + MSEAvg 97.30 ± 0.49. With 50 gateways: 98.52. Tables 2–4. Each experiment was run five times.</p></div></details>`
+};
+
+const mounted={};
+let cur=(()=>{try{const h=location.hash.slice(1);return GAMES.some(g=>g.id===h)?h:"copy"}catch(e){return "copy"}})();
+function renderTiles(){
+  $("#tiles").innerHTML=GAMES.map((g,i)=>`<button class="tile" data-id="${g.id}" aria-current="${g.id===cur}"><span class="k"><span>${i+1} / ${NG}</span>${badges[g.id]?'<span class="done">● badge</span>':""}</span><b>${esc(g.name)}</b><small>${esc(g.sub)}</small></button>`).join("");
+  $("#tiles").querySelectorAll(".tile").forEach(b=>b.onclick=()=>go(b.dataset.id));
+}
+function go(id){cur=id;try{if(location.hash.slice(1)!==id)location.hash=id}catch(e){}show()}
+function show(){
+  const id=cur,host=$("#games");
+  Object.values(mounted).forEach(m=>m.el.hidden=true);
+  if(!mounted[id]){
+    const g=GAMES.find(x=>x.id===id);
+    const el=document.importNode($("#"+g.tpl).content,true).firstElementChild;
+    host.appendChild(el);mounted[id]={el,api:INIT[id](el)};
+  }
+  mounted[id].el.hidden=false;
+  mounted[id].api&&mounted[id].api.onShow&&mounted[id].api.onShow();
+  $("#note").innerHTML=NOTES[id];
+  renderTiles();
+}
+window.addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(GAMES.some(g=>g.id===h)&&h!==cur){cur=h;show()}});
+const redrawAll=()=>Object.values(mounted).forEach(m=>m.api&&m.api.redraw&&m.api.redraw());
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",redrawAll);
+new MutationObserver(redrawAll).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+
+const DEVICES=["Danmini doorbell","Ecobee thermostat","Philips baby monitor","Provision camera A","Provision camera B","Samsung webcam","SimpleHome camera A","SimpleHome camera B","Ennio doorbell"];
+const INIT={};
+
+/* =============== GAME 1: COPY MACHINE =============== */
+INIT.copy=function(el){
+  const cv=$("#c-cv",el);let W=700,H=300,narrow=false,ctx;
+  function layout(){narrow=cv.clientWidth>0&&cv.clientWidth<560;W=narrow?360:700;H=narrow?560:300;cv._W=W;cv._H=H;cv.style.aspectRatio=W+"/"+H;ctx=prepCanvas(cv)}
+  layout();
+  const LAB=["Size","Speed","Links","Ports","In","Out","Gap","New IPs"];
+  const b1=[.7,.5,.3,.15,.6,.45,.55,.1], b2=[.2,.6,.2,.1,.1,.6,-.3,.05];
+  const dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0);
+  const n1=Math.sqrt(dot(b1,b1)),q1=b1.map(v=>v/n1);
+  const t2=b2.map((v,i)=>v-dot(b2,q1)*q1[i]);const n2=Math.sqrt(dot(t2,t2));const q2=t2.map(v=>v/n2);
+  const clip=v=>Math.max(.02,Math.min(1,v));
+  const TOTAL=10;
+  const S={i:0,score:0,msg:null,stage:"new",anim:0,raf:0};
+  function makeMsg(){
+    const a=rnd(.75,1.15),c=rnd(-.25,.4);
+    let x=b1.map((v,i)=>clip(a*v+c*b2[i]+gauss()*.012));
+    let kind="normal";
+    if(Math.random()<.45){
+      if(Math.random()<.5){kind="mirai";x=x.map((v,i)=>i===3?clip(v+rnd(.55,.75)):i===7?clip(v+rnd(.65,.85)):i===2?clip(v+rnd(.35,.5)):v)}
+      else{kind="gafgyt";x=x.map((v,i)=>i===0?rnd(.04,.1):i===1?clip(v+rnd(.35,.5)):i===4?rnd(.03,.08):i===5?clip(v+rnd(.3,.45)):i===6?.03:v)}
+    }
+    const z=[dot(x,q1),dot(x,q2)];
+    const y=x.map((_,i)=>z[0]*q1[i]+z[1]*q2[i]);
+    const err=x.reduce((s,v,i)=>s+(v-y[i])**2,0)/x.length;
+    return{x,y,z,err,kind};
+  }
+  function hud(){$("#c-hud",el).innerHTML=`<span>Message <b>${Math.min(S.i+1,TOTAL)}/${TOTAL}</b></span><span class="good">Correct <b>${S.score}</b></span>`}
+  function newMsg(){S.msg=makeMsg();S.stage="new";S.anim=0;$("#c-meter",el).style.width="0%";$("#c-meter",el).className="";$("#c-errv",el).textContent="—";
+    $("#c-run",el).disabled=false;$("#c-norm",el).disabled=true;$("#c-att",el).disabled=true;$("#c-next",el).hidden=true;
+    const fb=$("#c-fb",el);fb.className="feedback";fb.textContent=S.i===0?"A new message has arrived. Its 8 bars describe how it behaves (size, speed, ports tried and so on). Press Run the copy machine.":"A new message has arrived.";hud();draw()}
+  function run(){
+    if(S.stage!=="new")return;S.stage="anim";$("#c-run",el).disabled=true;const t0=performance.now();
+    const step=t=>{S.anim=Math.min(1,(t-t0)/900);draw();if(S.anim<1)S.raf=requestAnimationFrame(step);else{S.stage="shown";reveal()}};
+    S.raf=requestAnimationFrame(step);
+  }
+  function reveal(){
+    const pts=S.msg.err*1000,pct=Math.min(100,pts/30*100);
+    $("#c-meter",el).style.width=Math.max(2,pct).toFixed(0)+"%";$("#c-meter",el).className=pct>15?"hot":"";
+    $("#c-errv",el).textContent=pts.toFixed(1)+" points";
+    $("#c-norm",el).disabled=false;$("#c-att",el).disabled=false;
+    $("#c-fb",el).textContent="Compare the two sets of bars. Is the copy close to the original?";
+  }
+  function answer(saysAttack){
+    if(S.stage!=="shown")return;S.stage="done";
+    const isAtt=S.msg.kind!=="normal",ok=saysAttack===isAtt;if(ok)S.score++;
+    const fb=$("#c-fb",el);fb.className="feedback "+(ok?"ok":"no");
+    let why;
+    if(S.msg.kind==="mirai")why="This was a <b>scan</b> by a botnet such as Mirai, hunting for more devices to infect: lots of ports tried and many new addresses contacted. The machine never saw that shape, so it couldn't copy it.";
+    else if(S.msg.kind==="gafgyt")why="This was a <b>flood</b> by a botnet such as Gafgyt, attacking a target: tiny packets sent very fast with almost no gap, lots of data going out and almost nothing coming back. Normal traffic never looks like that, so the copy is off.";
+    else why="This was <b>normal</b> traffic. It looks like what the machine studied, so 2 numbers were enough to rebuild it almost exactly.";
+    fb.innerHTML=`<b>${ok?"Correct!":"Not this time."}</b> ${why}`;
+    S.i++;hud();
+    $("#c-norm",el).disabled=true;$("#c-att",el).disabled=true;
+    const nb=$("#c-next",el);nb.hidden=false;
+    if(S.i>=TOTAL){nb.textContent="Play again";fb.innerHTML+=`<br><b>Final score: ${S.score}/${TOTAL}.</b> ${S.score>=7?"Badge earned! You just did what an autoencoder detector does: big copy error means suspicious.":"Score 7 or more for the badge."}`;if(S.score>=7)award("copy")}
+    else nb.textContent="Next message";
+    draw();
+  }
+  function bars(x0,top,base,vals,col,ghost,label){
+    const bw=narrow?26:22,gap=narrow?12:6,h=base-top;
+    ctx.fillStyle=css("--ink");ctx.font="600 13px 'IBM Plex Sans', sans-serif";ctx.textAlign="left";ctx.fillText(label,x0,top-(narrow?14:28));
+    vals=vals.map(v=>Math.max(0,Math.min(1,v)));
+    vals.forEach((v,i)=>{const x=x0+i*(bw+gap);
+      ctx.fillStyle=col;ctx.fillRect(x,base-v*h,bw,v*h);
+      if(ghost){ctx.strokeStyle=css("--ink");ctx.setLineDash([3,3]);ctx.lineWidth=1.2;ctx.strokeRect(x+.5,base-ghost[i]*h,bw-1,ghost[i]*h);ctx.setLineDash([]);
+        const d=Math.abs(ghost[i]-v);if(d>.08){ctx.fillStyle=css("--anom");ctx.font="700 14px 'IBM Plex Mono', monospace";ctx.textAlign="center";ctx.fillText("!",x+bw/2,Math.min(base-v*h,base-ghost[i]*h)-6)}}
+      ctx.save();ctx.translate(x+bw/2+4,base+8);ctx.rotate(-Math.PI/4);ctx.fillStyle=css("--muted");ctx.font="10.5px 'IBM Plex Mono', monospace";ctx.textAlign="right";ctx.fillText(LAB[i],0,0);ctx.restore();
+    });
+    ctx.strokeStyle=css("--line");ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x0-4,base+.5);ctx.lineTo(x0+8*(bw+gap),base+.5);ctx.stroke();
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);if(!S.msg)return;
+    const muted=css("--muted"),acc=css("--accent");
+    if(narrow){drawNarrow(muted,acc);return}
+    bars(18,58,H-48,S.msg.x,muted,null,"Original message");
+    const fx=270,fw=160;ctx.fillStyle=css("--surface");ctx.strokeStyle=css("--line");ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(fx,70);ctx.lineTo(fx+fw/2-26,120);ctx.lineTo(fx+fw/2-26,170);ctx.lineTo(fx,220);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.moveTo(fx+fw,70);ctx.lineTo(fx+fw/2+26,120);ctx.lineTo(fx+fw/2+26,170);ctx.lineTo(fx+fw,220);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle=muted;ctx.font="11px 'IBM Plex Mono', monospace";ctx.textAlign="center";
+    ctx.fillText("encoder",fx+30,62);ctx.fillText("decoder",fx+fw-30,62);
+    ctx.fillText("squeeze →",fx+34,240);ctx.fillText("→ rebuild",fx+fw-34,240);
+    ctx.fillStyle=css("--surface2");ctx.strokeStyle=acc;ctx.lineWidth=2;ctx.beginPath();ctx.rect(fx+fw/2-30,118,60,54);ctx.fill();ctx.stroke();
+    ctx.fillStyle=acc;ctx.font="600 13px 'IBM Plex Mono', monospace";
+    if(S.stage!=="new"&&S.anim>.35){ctx.fillText(S.msg.z[0].toFixed(2),fx+fw/2,141);ctx.fillText(S.msg.z[1].toFixed(2),fx+fw/2,161)}else{ctx.fillText("? ?",fx+fw/2,150)}
+    ctx.fillStyle=muted;ctx.font="11px 'IBM Plex Mono', monospace";ctx.fillText("2 numbers",fx+fw/2,190);
+    if(S.stage!=="new"){
+      const k=Math.max(0,(S.anim-.5)/.5);
+      bars(452,58,H-48,S.msg.y.map(v=>Math.max(0,v)*k),acc,k>=1?S.msg.x:null,"Copy (dashed = original)");
+    }else{ctx.fillStyle=muted;ctx.textAlign="left";ctx.font="13px 'IBM Plex Sans', sans-serif";ctx.fillText("The copy appears here",480,150)}
+    ctx.textAlign="left";
+  }
+  function drawNarrow(muted,acc){
+    bars(28,44,200,S.msg.x,muted,null,"Original message");
+    const y0=262;
+    ctx.fillStyle=muted;ctx.font="12px 'IBM Plex Mono', monospace";ctx.textAlign="center";
+    ctx.fillText("encoder",70,y0+18);ctx.fillText("squeeze →",70,y0+34);
+    ctx.fillText("decoder",290,y0+18);ctx.fillText("→ rebuild",290,y0+34);
+    ctx.fillStyle=css("--surface");ctx.strokeStyle=acc;ctx.lineWidth=2;ctx.beginPath();ctx.rect(128,y0,104,44);ctx.fill();ctx.stroke();
+    ctx.fillStyle=acc;ctx.font="600 13px 'IBM Plex Mono', monospace";
+    if(S.stage!=="new"&&S.anim>.35)ctx.fillText(S.msg.z[0].toFixed(2)+"  "+S.msg.z[1].toFixed(2),180,y0+27);else ctx.fillText("?   ?",180,y0+27);
+    ctx.fillStyle=muted;ctx.font="11px 'IBM Plex Mono', monospace";ctx.fillText("2 numbers",180,y0+60);
+    if(S.stage!=="new"){
+      const k=Math.max(0,(S.anim-.5)/.5);
+      bars(28,372,516,S.msg.y.map(v=>Math.max(0,v)*k),acc,k>=1?S.msg.x:null,"Copy (dashed = original)");
+    }else{ctx.fillStyle=muted;ctx.textAlign="center";ctx.font="13px 'IBM Plex Sans', sans-serif";ctx.fillText("The copy appears here",180,450)}
+    ctx.textAlign="left";
+  }
+  window.addEventListener("resize",()=>{if(!el.hidden){layout();draw()}});
+  $("#c-run",el).onclick=run;
+  $("#c-norm",el).onclick=()=>answer(false);
+  $("#c-att",el).onclick=()=>answer(true);
+  $("#c-next",el).onclick=()=>{if(S.i>=TOTAL){S.i=0;S.score=0}newMsg()};
+  newMsg();
+  return{redraw(){layout();draw()},onShow(){layout();draw()}};
+};
+
+/* =============== GAME 2: SPOT THE INTRUDER =============== */
+INIT.guard=function(el){
+  const cv=$("#g1-cv",el);let W=640,H=420,CX=320,CY=210,K=1,narrow=false,ctx;
+  function layout(){narrow=cv.clientWidth>0&&cv.clientWidth<560;W=narrow?360:640;H=narrow?400:420;K=narrow?.85:1;CX=W/2;CY=H/2;cv._W=W;cv._H=H;cv.style.aspectRatio=W+"/"+H;ctx=prepCanvas(cv)}
+  layout();
+  const S={mode:"ae",running:false,pk:[],hist:[],spawned:0,total:30,score:0,caught:0,breach:0,fa:0,pass:0,next:0,auto:false,r:70,raf:0,played:{ae:false,sae:false}};
+  const LIFE=2600;
+  function sample(anom){
+    if(S.mode==="ae"){
+      if(!anom)return{x:25+gauss()*62,y:-12+gauss()*46};
+      const a=rnd(0,Math.PI*2),r=rnd(45,190);return{x:Math.cos(a)*r,y:Math.sin(a)*r*0.85};
+    }
+    if(!anom)return{x:gauss()*17,y:gauss()*17};
+    const a=rnd(0,Math.PI*2),r=rnd(78,190);return{x:Math.cos(a)*r,y:Math.sin(a)*r*0.85};
+  }
+  function hud(){
+    $("#g1-hud",el).innerHTML=`<span>Score <b>${S.score}</b></span><span class="good">Attacks caught <b>${S.caught}</b></span><span class="bad">Attacks missed <b>${S.breach}</b></span><span class="bad">False alarms <b>${S.fa}</b></span><span>Left <b>${S.total-S.spawned+S.pk.filter(p=>!p.done).length}</b></span>`;
+  }
+  function spawn(t){
+    const anom=Math.random()<0.3,p=sample(anom);
+    const pk={...p,anom,t0:t,done:false,atk:Math.random()<.5?"Mirai":"Gafgyt"};
+    S.pk.push(pk);S.spawned++;
+    if(S.auto&&Math.hypot(pk.x,pk.y)>S.r)resolve(pk,true,t+350);
+  }
+  function resolve(pk,flag,t){
+    pk.done=true;pk.flag=flag;pk.t1=t||performance.now();
+    if(flag&&pk.anom){S.caught++;S.score+=10}
+    else if(flag&&!pk.anom){S.fa++;S.score-=5}
+    else if(!flag&&pk.anom){S.breach++;S.score-=10}
+    else{S.pass++;S.score+=1}
+    S.hist.push(pk);hud();
+  }
+  function start(){
+    Object.assign(S,{running:true,pk:[],hist:[],spawned:0,score:0,caught:0,breach:0,fa:0,pass:0,next:performance.now()+400});
+    $("#g1-over",el).hidden=true;$("#g1-start",el).textContent="Restart round";hud();
+    cancelAnimationFrame(S.raf);S.raf=requestAnimationFrame(loop);
+  }
+  function finish(){
+    S.running=false;S.played[S.mode]=true;
+    const dr=S.caught+S.breach?Math.round(100*S.caught/(S.caught+S.breach)):100;
+    const far=S.fa+S.pass?Math.round(100*S.fa/(S.fa+S.pass)):0;
+    const msg=S.mode==="ae"
+      ?"On the basic machine's map, normal messages spread into a big blob and attacks land right inside it. Hard, right? Now try the Shrink machine."
+      :"The Shrink machine packed normal messages into a tight ball around the centre, so attacks stood out. A simple circle can now catch them. This is why FedMSE uses it, and it helps most when buildings see lopsided data.";
+    $("#g1-sum",el).innerHTML=`<div class="eyebrow">Round over · ${S.mode==="ae"?"Basic machine":"Shrink machine"}${S.auto?" · auto‑guard":""}</div>
+      <div class="hud"><span>Score <b>${S.score}</b></span><span class="good">Caught <b>${dr}%</b> of attacks</span><span class="bad">False alarms on <b>${far}%</b> of normal</span></div>
+      <p>${msg}</p><div class="row"><button class="btn primary" id="g1-again">Play again</button>${S.mode==="ae"?'<button class="btn" id="g1-switch">Try the Shrink machine</button>':""}</div>
+      ${S.played.ae&&S.played.sae?"<p><b>Badge earned!</b></p>":""}`;
+    $("#g1-over",el).hidden=false;
+    $("#g1-again",el).onclick=start;
+    const sw=$("#g1-switch",el);if(sw)sw.onclick=()=>{setMode("sae");start()};
+    if(S.played.ae&&S.played.sae)award("guard");
+    draw(performance.now());
+  }
+  function loop(t){
+    if(S.running&&S.spawned<S.total&&t>=S.next){spawn(t);S.next=t+rnd(600,1000)}
+    S.pk.forEach(p=>{if(!p.done&&t-p.t0>LIFE)resolve(p,false,t)});
+    S.pk=S.pk.filter(p=>!p.done||t-p.t1<900);
+    draw(t);
+    if(S.running&&S.spawned>=S.total&&!S.pk.some(p=>!p.done)){finish();return}
+    S.raf=requestAnimationFrame(loop);
+  }
+  function draw(t){
+    const line=css("--line"),muted=css("--muted"),ink=css("--ink"),nor=css("--normal"),an=css("--anom"),acc=css("--accent");
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle=line;ctx.lineWidth=1;
+    for(let x=CX%40;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+    for(let y=CY%40;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+    ctx.fillStyle=muted;ctx.font="11px 'IBM Plex Mono', monospace";ctx.fillText("number 1 →",W-86,CY-6);ctx.fillText("number 2",CX+6,14);
+    S.hist.forEach(p=>{ctx.globalAlpha=.3;ctx.fillStyle=p.anom?an:nor;ctx.beginPath();ctx.arc(CX+p.x*K,CY+p.y*K,3,0,7);ctx.fill()});
+    ctx.globalAlpha=1;
+    if(S.auto||!S.running){ctx.setLineDash([5,5]);ctx.strokeStyle=acc;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(CX,CY,S.r*K,0,7);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=acc;ctx.fillText("guard circle",CX+S.r*K*0.72+4,CY-S.r*K*0.72-4)}
+    ctx.strokeStyle=ink;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(CX-8,CY);ctx.lineTo(CX+8,CY);ctx.moveTo(CX,CY-8);ctx.lineTo(CX,CY+8);ctx.stroke();
+    if(!S.running&&!S.hist.length){
+      ctx.globalAlpha=.55;
+      for(let i=0;i<90;i++){const a=i%4===0,p=sample(a);ctx.fillStyle=a?an:nor;ctx.beginPath();ctx.arc(CX+p.x*K,CY+p.y*K,3,0,7);ctx.fill()}
+      ctx.globalAlpha=1;ctx.fillStyle=ink;ctx.font="600 14px 'IBM Plex Sans', sans-serif";
+      ctx.fillText("Preview: the "+(S.mode==="ae"?"basic":"Shrink")+" machine's map",12,H-32);ctx.font="13px 'IBM Plex Sans', sans-serif";ctx.fillText("green = normal, orange = attack. Press Start.",12,H-13);
+    }
+    S.pk.forEach(p=>{
+      const x=CX+p.x*K,y=CY+p.y*K;
+      if(!p.done){
+        const f=1-(t-p.t0)/LIFE;
+        ctx.fillStyle=muted;ctx.beginPath();ctx.arc(x,y,8,0,7);ctx.fill();
+        ctx.strokeStyle=ink;ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,13,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(0,f));ctx.stroke();
+      }else{
+        const a=1-(t-p.t1)/900;ctx.globalAlpha=Math.max(0,Math.min(1,a));
+        ctx.fillStyle=p.anom?an:nor;ctx.beginPath();ctx.arc(x,y,8,0,7);ctx.fill();
+        const right=(p.flag===p.anom);
+        ctx.fillStyle=ink;ctx.font="600 11px 'IBM Plex Mono', monospace";
+        const label=p.anom?(p.flag?"caught "+p.atk:"missed "+p.atk+"!"):(p.flag?"false alarm":"");
+        if(label)ctx.fillText((right?"✓ ":"✗ ")+label,x+12,y-10);
+        ctx.globalAlpha=1;
+      }
+    });
+  }
+  cv.addEventListener("pointerdown",e=>{
+    if(!S.running)return;const m=evPos(cv,e);let best=null,bd=narrow?34:26;
+    S.pk.forEach(p=>{if(p.done)return;const d=Math.hypot(CX+p.x*K-m.x,CY+p.y*K-m.y);if(d<bd){bd=d;best=p}});
+    if(best)resolve(best,true);
+  });
+  function setMode(m){S.mode=m;$("#g1-ae",el).setAttribute("aria-pressed",m==="ae");$("#g1-sae",el).setAttribute("aria-pressed",m==="sae");if(!S.running){S.hist=[];draw(performance.now())}}
+  $("#g1-ae",el).onclick=()=>{setMode("ae");if(S.running)start()};
+  $("#g1-sae",el).onclick=()=>{setMode("sae");if(S.running)start()};
+  $("#g1-start",el).onclick=start;
+  $("#g1-auto",el).onchange=e=>{S.auto=e.target.checked;draw(performance.now())};
+  $("#g1-r",el).oninput=e=>{S.r=+e.target.value;$("#g1-rv",el).textContent=S.r;if(!S.running)draw(performance.now())};
+  hud();draw(0);
+  window.addEventListener("resize",()=>{if(!el.hidden){layout();draw(performance.now())}});
+  return{redraw(){layout();draw(performance.now())},onShow(){layout();draw(performance.now())}};
+};
+
+/* =============== GAME 3: FAIR OR LOPSIDED =============== */
+INIT.deal=function(el){
+  const cv=$("#g7-cv",el);let W=680,H=320,ctx;
+  function layout(){const n=cv.clientWidth>0&&cv.clientWidth<560;W=n?360:680;H=n?300:320;cv._W=W;cv._H=H;cv.style.aspectRatio=W+"/"+H;ctx=prepCanvas(cv)}
+  layout();
+  const NORMAL=[49548,13113,175240,62154,98514,52150,46585,19528,39100];
+  const TOTAL=16000,N=10;
+  const devShare=NORMAL.map(v=>v/NORMAL.reduce((a,b)=>a+b,0));
+  let alpha=1,alloc=null;const goals={lo:false,hi:false};
+  const sl=$("#g7-a",el);
+  const toAlpha=v=>Math.pow(10,-1.3+v*(4.3/100));
+  function gamma(k){if(k<1){return gamma(k+1)*Math.pow(Math.random(),1/k)}const d=k-1/3,c=1/Math.sqrt(9*d);for(;;){let x,v;do{x=gauss();v=1+c*x}while(v<=0);v=v*v*v;const u=Math.random();if(u<1-0.0331*x*x*x*x)return d*v;if(Math.log(u)<0.5*x*x+d*(1-v+Math.log(v)))return d*v}}
+  function dir(a,n){const g=Array.from({length:n},()=>Math.max(gamma(a),1e-12));const s=g.reduce((x,y)=>x+y,0);return g.map(x=>x/s)}
+  function deal(){
+    alloc=Array.from({length:N},()=>Array(9).fill(0));
+    for(let k=0;k<9;k++){const p=dir(alpha,N);const tot=TOTAL*devShare[k];p.forEach((v,j)=>alloc[j][k]=Math.round(v*tot))}
+    draw();stats();
+  }
+  function jsd(p,q){const m=p.map((v,i)=>(v+q[i])/2);const kl=(a,b)=>a.reduce((s,v,i)=>v>0?s+v*Math.log2(v/b[i]):s,0);return Math.sqrt(Math.max(0,(kl(p,m)+kl(q,m))/2))}
+  function stats(){
+    const sizes=alloc.map(r=>r.reduce((a,b)=>a+b,0));const tot=sizes.reduce((a,b)=>a+b,0);
+    const glob=Array(9).fill(0);alloc.forEach(r=>r.forEach((v,k)=>glob[k]+=v));const gp=glob.map(v=>v/tot);
+    const js=alloc.map((r,j)=>sizes[j]?jsd(r.map(v=>v/sizes[j]),gp):0);
+    const meanJs=js.reduce((a,b)=>a+b,0)/N;
+    const big=sizes.indexOf(Math.max(...sizes)),small=sizes.indexOf(Math.min(...sizes));
+    const lvl=meanJs<0.05?"even":meanJs>0.5?"very lopsided":"a bit lopsided";
+    $("#g7-hud",el).innerHTML=`<span>Mismatch score <b>${meanJs.toFixed(2)}</b> (${lvl})</span><span>Biggest: <b>Building ${big+1}</b></span><span>Smallest: <b>Building ${small+1}</b></span>`;
+    const fb=$("#g7-fb",el);
+    if(meanJs<0.05)goals.lo=true;if(meanJs>0.5)goals.hi=true;
+    let msg=meanJs<0.05?"Even: every building has nearly the same mix of colours. Every detector learns the same idea of normal, so blending them is easy.":
+      meanJs>0.5?`Lopsided: most buildings are dominated by one or two colours. Building ${big+1} alone holds ${Math.round(100*sizes[big]/tot)}% of all the data, while Building ${small+1} has only ${sizes[small].toLocaleString()} records. If we trusted buildings by size, Building ${big+1} would boss everyone around, even though its traffic looks nothing like the rest. Game 4 shows the fix.`:
+      "Somewhere in between. Slide further left for lopsided, or further right for even.";
+    msg+=`  Goals: ${goals.lo?"✓":"○"} make an even network · ${goals.hi?"✓":"○"} make a very lopsided network.`;
+    if(goals.lo&&goals.hi){msg+=" Badge earned!";award("deal")}
+    fb.className="feedback"+(goals.lo&&goals.hi?" ok":"");fb.textContent=msg;
+  }
+  function draw(){
+    const line=css("--line"),muted=css("--muted");
+    ctx.clearRect(0,0,W,H);if(!alloc)return;
+    const L=54,B=H-34,T=16,bw=(W-L-14)/N;
+    const sizes=alloc.map(r=>r.reduce((a,b)=>a+b,0));const max=Math.max(...sizes);
+    const step=max>8000?2000:max>4000?1000:max>2000?500:250;const top=Math.ceil(max/step)*step;
+    ctx.font="11px 'IBM Plex Mono', monospace";ctx.fillStyle=muted;ctx.strokeStyle=line;ctx.lineWidth=1;
+    for(let v=0;v<=top;v+=step){const y=B-(B-T)*v/top;ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(W-8,y);ctx.stroke();ctx.textAlign="right";ctx.fillText(v.toLocaleString(),L-6,y+4)}
+    ctx.textAlign="center";
+    alloc.forEach((r,j)=>{let y=B;const x=L+j*bw+bw*.15,w=bw*.7;
+      r.forEach((v,k)=>{const h=(B-T)*v/top;if(h<=0)return;ctx.fillStyle=css("--d"+k);ctx.fillRect(x,y-h,w,h);y-=h});
+      ctx.fillStyle=muted;ctx.fillText("B"+(j+1),x+w/2,B+16)});
+    ctx.textAlign="left";ctx.fillStyle=muted;ctx.fillText("normal records per building (B = building)",L,H-4);
+  }
+  sl.oninput=()=>{alpha=toAlpha(+sl.value)};sl.onchange=deal;
+  $("#g7-deal",el).onclick=deal;
+  $("#g7-leg",el).innerHTML=DEVICES.map((d,k)=>`<span><i style="background:var(--d${k})"></i>${esc(d)}</span>`).join("");
+  alpha=toAlpha(+sl.value);deal();
+  window.addEventListener("resize",()=>{if(!el.hidden){layout();draw()}});
+  return{redraw(){layout();draw()},onShow(){layout();draw()}};
+};
+
+/* =============== GAME 4: WHO SHOULD WE TRUST =============== */
+INIT.weigh=function(el){
+  const cv=$("#g2-cv",el);let ctx=prepCanvas(cv);const W=440,H=440;
+  const SC=[
+    {key:"iid",name:"Similar buildings",blurb:"All five buildings see the same kind of traffic. Every detector lands near the bullseye.",
+     g:[{id:1,n:1700,x:.08,y:.06},{id:4,n:1650,x:-.1,y:.05},{id:6,n:1780,x:.04,y:-.11},{id:8,n:1600,x:-.06,y:-.07},{id:10,n:1720,x:.12,y:-.02}]},
+    {key:"het",name:"Lopsided buildings",blurb:"Buildings 5 and 2 have lots of data, but it's mostly one or two device types, so their detectors are off target. The small buildings learned a better all‑round idea of normal.",
+     g:[{id:5,n:4300,x:.62,y:.35},{id:2,n:3800,x:-.5,y:.45},{id:3,n:600,x:.1,y:.12},{id:6,n:800,x:-.12,y:-.1},{id:9,n:500,x:.15,y:.15}]},
+    {key:"noisy",name:"One giant, way off",blurb:"Building 1 is huge but saw unusual traffic. Building 8 is medium‑sized and also off target.",
+     g:[{id:1,n:4500,x:.7,y:-.3},{id:3,n:600,x:.12,y:.1},{id:6,n:900,x:-.15,y:.05},{id:8,n:2500,x:-.45,y:-.55},{id:9,n:700,x:.05,y:-.2}]}
+  ];
+  let sc=1,wts=[5,5,5,5,5],shown={fa:false,ms:false};const best={};
+  const mse=g=>.010+.12*(g.x*g.x+g.y*g.y);
+  const mistakes=g=>Math.round(mse(g)*1000);
+  const auc=p=>Math.max(80,Math.min(99.6,99.6-14*Math.hypot(p.x,p.y)));
+  function agg(ws){const s=ws.reduce((a,b)=>a+b,0)||1;const G=SC[sc].g;return{x:G.reduce((a,g,i)=>a+ws[i]*g.x,0)/s,y:G.reduce((a,g,i)=>a+ws[i]*g.y,0)/s}}
+  const fedavgW=()=>SC[sc].g.map(g=>g.n), msW=()=>SC[sc].g.map(g=>1/mse(g));
+  const R=W/2-24,X=v=>W/2+v*R,Y=v=>H/2-v*R;
+  function scenButtons(){
+    $("#g2-scen",el).innerHTML=SC.map((s,i)=>`<button aria-pressed="${i===sc}" data-i="${i}">${s.name}</button>`).join("");
+    $("#g2-scen",el).querySelectorAll("button").forEach(b=>b.onclick=()=>{sc=+b.dataset.i;wts=[5,5,5,5,5];shown={fa:false,ms:false};scenButtons();table();update();
+      const fb=$("#g2-fb",el);fb.className="feedback";fb.textContent=SC[sc].blurb});
+  }
+  function table(){
+    const G=SC[sc].g;
+    $("#g2-tbl",el).innerHTML=`<caption class="eyebrow" style="text-align:left;caption-side:bottom;padding-top:6px">Mistakes = errors on the shared practice test (lower is better)</caption><tr><th>Bldg</th><th>Data</th><th>Mistakes</th><th>Your trust</th><th>Share</th></tr>`+
+      G.map((g,i)=>`<tr><td>B${g.id}</td><td>${g.n.toLocaleString()}</td><td>${mistakes(g)}</td><td><input type="range" min="0" max="10" step="1" value="${wts[i]}" data-i="${i}" id="g2-w${i}" aria-label="Trust for building ${g.id}"></td><td id="g2-s${i}"></td></tr>`).join("");
+    $("#g2-tbl",el).querySelectorAll("input").forEach(r=>r.oninput=()=>{wts[+r.dataset.i]=+r.value;update()});
+  }
+  function update(){
+    const s=wts.reduce((a,b)=>a+b,0)||1;
+    wts.forEach((w,i)=>{$("#g2-s"+i,el).textContent=Math.round(100*w/s)+"%"});
+    const you=auc(agg(wts));$("#g2-you",el).textContent=wts.every(w=>w===0)?"—":you.toFixed(1)+"%";
+    const fa=auc(agg(fedavgW())),ms=auc(agg(msW()));
+    let h="";
+    if(shown.fa)h+=`<div><small>Rule A · trust the biggest (FedAvg)</small><b>${fa.toFixed(1)}%</b></div>`;
+    if(shown.ms)h+=`<div><small>Rule B · trust fewest mistakes (MSEAvg)</small><b>${ms.toFixed(1)}%</b></div>`;
+    $("#g2-cmp",el).innerHTML=h;
+    if(shown.fa&&shown.ms){
+      const fb=$("#g2-fb",el);
+      if(SC[sc].key==="iid"){fb.className="feedback ok";fb.textContent="When buildings are similar, both rules land near the bullseye. That's what the paper found too: on even networks every method scores about 99%."}
+      else if(you>ms+0.3){best[sc]=true;fb.className="feedback ok";fb.textContent=`You beat both rules (${you.toFixed(1)}%), but only because you can see the bullseye. A real head office can't: all it has is each building's practice‑test mistakes. Using only those numbers, Rule B still gets ${ms.toFixed(1)}%, far ahead of Rule A's ${fa.toFixed(1)}%.`}
+      else if(you>=ms-0.3){best[sc]=true;fb.className="feedback ok";fb.textContent=`You matched Rule B (${you.toFixed(1)}% vs ${ms.toFixed(1)}%) and beat Rule A by ${(you-fa).toFixed(1)} points. You trusted the buildings with the fewest practice‑test mistakes, which is exactly the paper's idea.`}
+      else if(you>fa){fb.className="feedback";fb.textContent=`Better than Rule A, but Rule B is still ${(ms-you).toFixed(1)} points ahead. Give more trust to the buildings with the fewest mistakes.`}
+      else{fb.className="feedback no";fb.textContent="Rule A trusted the biggest buildings, and they dragged the team dart off target. Try giving more trust to the buildings with few practice‑test mistakes."}
+      const done=[1,2].filter(i=>best[i]).length;
+      if(done===2){if(!badges.weigh)fb.textContent+=" Badge earned!";award("weigh")}
+      else if(SC[sc].key!=="iid")fb.textContent+=` (Match Rule B in both tricky situations for the badge: ${done}/2.)`;
+    }
+    draw();
+  }
+  function draw(){
+    const line=css("--line"),muted=css("--muted"),ink=css("--ink"),nor=css("--normal"),an=css("--anom"),acc=css("--accent");
+    ctx.clearRect(0,0,W,H);
+    [1,.8,.6,.4,.2].forEach((r,i)=>{ctx.fillStyle=i%2?css("--surface2"):css("--surface");ctx.beginPath();ctx.arc(W/2,H/2,r*R,0,7);ctx.fill();ctx.strokeStyle=line;ctx.lineWidth=1;ctx.stroke()});
+    ctx.fillStyle=muted;ctx.font="10.5px 'IBM Plex Mono', monospace";ctx.textAlign="center";
+    [.2,.4,.6,.8].forEach(r=>ctx.fillText((99.6-14*r).toFixed(0)+"%",W/2,H/2-r*R+12));
+    ctx.fillStyle=ink;ctx.beginPath();ctx.arc(W/2,H/2,5,0,7);ctx.fill();
+    const G=SC[sc].g,glob=agg(wts);
+    G.forEach((g,i)=>{ctx.strokeStyle=acc;ctx.globalAlpha=Math.min(.9,.08+wts[i]/12);ctx.lineWidth=1+wts[i]/3;
+      ctx.beginPath();ctx.moveTo(X(glob.x),Y(glob.y));ctx.lineTo(X(g.x),Y(g.y));ctx.stroke();ctx.globalAlpha=1});
+    G.forEach(g=>{const r=6+Math.sqrt(g.n)/5;
+      ctx.fillStyle=css("--surface");ctx.strokeStyle=muted;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(X(g.x),Y(g.y),r,0,7);ctx.fill();ctx.stroke();
+      ctx.fillStyle=ink;ctx.font="600 11px 'IBM Plex Mono', monospace";ctx.fillText("B"+g.id,X(g.x),Y(g.y)+4)});
+    ctx.textAlign="left";
+    const mk=(p,col,shape,label)=>{const x=X(p.x),y=Y(p.y);ctx.fillStyle=col;ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.beginPath();
+      if(shape==="d"){ctx.moveTo(x,y-10);ctx.lineTo(x+10,y);ctx.lineTo(x,y+10);ctx.lineTo(x-10,y);ctx.closePath();ctx.fill()}
+      else{ctx.rect(x-7,y-7,14,14);ctx.stroke()}
+      ctx.font="600 12px 'IBM Plex Sans', sans-serif";ctx.fillText(label,x+12,y-8)};
+    if(shown.fa)mk(agg(fedavgW()),an,"s","Rule A");
+    if(shown.ms)mk(agg(msW()),nor,"s","Rule B");
+    if(!wts.every(w=>w===0))mk(glob,acc,"d","Team");
+    ctx.fillStyle=muted;ctx.font="11px 'IBM Plex Sans', sans-serif";ctx.fillText("bigger circle = more data",8,H-8);
+  }
+  $("#g2-eq",el).onclick=()=>{wts=[5,5,5,5,5];table();update()};
+  $("#g2-fa",el).onclick=()=>{shown.fa=true;update()};
+  $("#g2-ms",el).onclick=()=>{shown.ms=true;update()};
+  scenButtons();table();update();$("#g2-fb",el).textContent=SC[sc].blurb;
+  return{redraw(){ctx=prepCanvas(cv);draw()},onShow(){ctx=prepCanvas(cv);draw()}};
+};
+
+/* =============== GAME 5: TEAMWORK ROUND =============== */
+INIT.round=function(el){
+  const PHASES=[
+    {title:"One training round",steps:[
+      "Head office sends the current detector to half of the buildings",
+      "Each building practises on its own normal traffic",
+      "Buildings send back only what they learned (the detector's numbers)",
+      "Head office gives each detector the same practice test",
+      "Fewer mistakes earns more trust (trust = 1 ÷ mistakes)",
+      "Head office blends the detectors, trusting the best ones more",
+      "The improved detector goes back to every building"]},
+    {title:"Catching an intruder",steps:[
+      "Keep only the squeezing half (the encoder)",
+      "Squeeze a new message into a spot on the map",
+      "Measure how far the spot is from the centre of normal",
+      "Too far away? Raise the alarm"]}
+  ];
+  const decoys=["Head office copies every building's raw traffic","Someone labels thousands of attacks by hand first"];
+  let ph=0,pos=0,miss=0,pool=[];
+  function setup(){ph=0;miss=0;loadPhase();$("#g3-built",el).innerHTML="";const fb=$("#g3-fb",el);fb.className="feedback";fb.textContent="Start with whatever the head office does first."}
+  function loadPhase(){pos=0;const st=PHASES[ph].steps.map((s,i)=>({s,i}));pool=shuffle(ph===0?st.concat(decoys.map(s=>({s,i:-1}))):st);renderPool();hud()}
+  function hud(){$("#g3-hud",el).innerHTML=`<span>Part <b>${ph+1}/2</b> · ${PHASES[ph].title}</span><span class="bad">Mistakes <b>${miss}</b></span>`;$("#g3-builttitle",el).textContent="Your sequence · "+PHASES[ph].title}
+  function renderPool(){const host=$("#g3-pool",el);host.innerHTML="";pool.forEach(o=>{const b=document.createElement("button");b.className="card-btn";b.textContent=o.s;b.onclick=()=>pick(o,b);host.appendChild(b)})}
+  function shake(b){b.classList.remove("shake");void b.offsetWidth;b.classList.add("shake")}
+  function pick(o,b){
+    const fb=$("#g3-fb",el);
+    if(o.i===-1){miss++;shake(b);fb.className="feedback no";
+      fb.textContent=o.s.includes("raw")?"Trap card! Raw traffic never leaves the building. That's the whole point.":"Trap card! FedMSE learns from normal traffic only, so nobody needs to label attacks.";
+      pool=pool.filter(x=>x!==o);setTimeout(renderPool,350);hud();return}
+    if(o.i!==pos){miss++;shake(b);fb.className="feedback no";fb.textContent="Not yet. Something else has to happen first.";hud();return}
+    const li=document.createElement("li");li.innerHTML=`<span class="n">${pos+1}</span><span>${esc(o.s)}</span>`;$("#g3-built",el).appendChild(li);
+    pool=pool.filter(x=>x!==o);pos++;fb.className="feedback ok";fb.textContent="Correct!";renderPool();
+    if(pos===PHASES[ph].steps.length){
+      if(ph===0){fb.textContent="Round complete! The paper repeats this up to 20 times. Now: how does a building use the finished detector?";
+        setTimeout(()=>{ph=1;$("#g3-built",el).innerHTML="";loadPhase()},1400)}
+      else{fb.textContent=`All done with ${miss} mistake${miss===1?"":"s"}. ${miss<=2?"Badge earned!":"Finish with 2 mistakes or fewer for the badge."}`;if(miss<=2)award("round");$("#g3-pool",el).innerHTML='<div class="slot">All steps placed.</div>'}
+    }
+    hud();
+  }
+  $("#g3-reset",el).onclick=setup;setup();return{};
+};
+
+/* =============== GAME 6: WHAT LEAVES THE BUILDING =============== */
+INIT.border=function(el){
+  const ITEMS=[
+    {t:"Video‑stream traffic from the baby monitor",b:"stay",w:"Raw traffic never leaves. The building's router learns from it right there."},
+    {t:"The detector's learned numbers (its \"weights\")",b:"send",w:"This is the lesson, not the diary. It's the main thing buildings send each round."},
+    {t:"Thousands of attack examples, labelled by hand, for training",b:"none",w:"FedMSE only learns what normal looks like, so nobody has to collect and label attacks for training. (The researchers did use labelled attacks afterwards, only to grade how well it works.)"},
+    {t:"The addresses of every device in the house",b:"stay",w:"Addresses reveal what you own. They stay inside the building."},
+    {t:"A processed sample of normal traffic (summary numbers, same amount from every building)",b:"send",w:"Shared once, before training starts. Head office uses it as the practice test for Rule B. It is processed into summary statistics, not raw packets."},
+    {t:"How much data each building has",b:"none",w:"The old rule (FedAvg) needs this. FedMSE's rule uses practice‑test mistakes instead."},
+    {t:"Personal info inside messages (logins, chats)",b:"stay",w:"Exactly the kind of private data federated learning protects."},
+    {t:"The rebuilding half of the copy machine, when catching intruders",b:"none",w:"For detection, only the squeezing half (encoder) plus the distance check are needed."},
+    {t:"Notes about which devices have security holes",b:"stay",w:"Network admins keep this private. Sharing it would help attackers."},
+    {t:"Attack data to fine‑tune the settings",b:"none",w:"There are no attacks during training, so the authors used common default settings."}
+  ];
+  let deck=[],i=0,score=0,counts={stay:0,send:0,none:0},locked=false;
+  function setup(){deck=shuffle(ITEMS);i=0;score=0;counts={stay:0,send:0,none:0};render()}
+  function render(){
+    $("#g4-hud",el).innerHTML=`<span>Card <b>${Math.min(i+1,deck.length)}/${deck.length}</b></span><span class="good">Correct <b>${score}</b></span>`;
+    ["stay","send","none"].forEach(k=>$("#g4-c-"+k,el).textContent=counts[k]+" placed");
+    if(i>=deck.length){$("#g4-card",el).innerHTML=`<div class="eyebrow">Done</div><div class="item">${score}/${deck.length} correct</div><p>Only two kinds of thing travel: the detector's learned numbers (every round), and a processed sample of normal traffic (once, for the practice test). ${score>=8?"Badge earned!":"Score 8 or more for the badge."}</p><div class="row"><button class="btn primary" id="g4-again">Play again</button></div>`;
+      $("#g4-again",el).onclick=setup;if(score>=8)award("border");return}
+    $("#g4-card",el).innerHTML=`<div class="eyebrow">Where does this go?</div><div class="item">${esc(deck[i].t)}</div>`;
+  }
+  el.querySelectorAll(".bin").forEach(b=>b.onclick=()=>{
+    if(i>=deck.length||locked)return;const it=deck[i],ok=b.dataset.bin===it.b,fb=$("#g4-fb",el);
+    if(ok)score++;counts[it.b]++;
+    const names={stay:"Stays in the building",send:"Sent to head office",none:"Not needed at all"};
+    fb.className="feedback "+(ok?"ok":"no");fb.innerHTML=`<span class="eyebrow">Last card: ${esc(it.t)}</span><br><b>${ok?"Right!":"Not quite. Answer: "+names[it.b]+"."}</b> ${esc(it.w)}`;
+    locked=true;i++;render();setTimeout(()=>{locked=false},ok?400:1000);
+  });
+  setup();return{};
+};
+
+/* =============== GAME 7: WORD HUNT =============== */
+INIT.decode=function(el){
+  const WORDS=[
+    ["BOTNET","An army of hacked devices controlled by one attacker."],
+    ["MIRAI","Famous malware that turned cameras and routers into a botnet in 2016."],
+    ["PRIVACY","What federated learning protects by keeping raw data at home."],
+    ["GATEWAY","The router or hub that serves one building or area."],
+    ["SERVER","The head‑office computer that blends what the buildings learned."],
+    ["ANOMALY","Something that doesn't fit the normal pattern."],
+    ["AUTOENCODER","The copy‑machine network: squeeze, then rebuild."],
+    ["ENCODER","The squeezing half of the copy machine."],
+    ["DECODER","The rebuilding half of the copy machine."],
+    ["CENTROID","The centre point of a group. Far from it means suspicious."],
+    ["SHRINK","This kind of autoencoder pulls normal messages toward the centre."],
+    ["FEDERATED","Learning together while each place keeps its own data."],
+    ["NORMAL","The only kind of traffic FedMSE needs to learn from."],
+    ["ERROR","How far the copy is from the original."],
+    ["ROUND","One cycle of send, practise, report and blend. The paper runs up to 20."],
+    ["WEIGHT","How much say each building's detector gets in the blend. MSEAvg sets it to 1 ÷ mistakes."]
+  ];
+  let deck=[],w="",clue="",guessed=new Set(),misses=0,solved=0,played=0,streak=0,over=false;
+  const MAX=6;
+  function next(){if(!deck.length)deck=shuffle(WORDS);const p=deck.pop();w=p[0];clue=p[1];guessed=new Set();misses=0;over=false;$("#g5-next",el).hidden=true;$("#g5-hint",el).disabled=false;const fb=$("#g5-fb",el);fb.className="feedback";fb.textContent="Guess a letter.";render()}
+  function letters(){return [...new Set(w.replace(/[^A-Z]/g,""))]}
+  function render(){
+    $("#g5-hud",el).innerHTML=`<span class="good">Words found <b>${solved}</b></span><span>Played <b>${played}</b></span><span>Streak <b>${streak}</b></span>`;
+    $("#g5-fw",el).innerHTML=Array.from({length:MAX},(_,k)=>`<i class="${k<misses?"down":""}"></i>`).join("");
+    $("#g5-clue",el).innerHTML=`<span class="eyebrow">Clue · ${w.replace(/[^A-Z]/g,"").length} letters</span><br>${esc(clue)}`;
+    $("#g5-word",el).innerHTML=[...w].map(c=>c===" "?'<span class="gap"></span>':/[A-Z]/.test(c)?`<span class="${over&&!guessed.has(c)?"miss":""}">${guessed.has(c)||over?c:""}</span>`:`<span class="punct">${c}</span>`).join("");
+    $("#g5-keys",el).innerHTML="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(c=>{const s=guessed.has(c)?(w.includes(c)?"hit":"miss"):"";return`<button data-k="${c}" class="${s}" ${guessed.has(c)||over?"disabled":""} aria-label="Letter ${c}">${c}</button>`}).join("");
+    $("#g5-keys",el).querySelectorAll("button").forEach(b=>b.onclick=()=>guess(b.dataset.k));
+  }
+  function check(){
+    const fb=$("#g5-fb",el);
+    if(letters().every(l=>guessed.has(l))){over=true;solved++;played++;streak++;fb.className="feedback ok";fb.textContent=`You found it: ${w}! ${solved>=5?"Badge earned!":"Find 5 words for the badge."}`;if(solved>=5)award("decode");$("#g5-next",el).hidden=false;$("#g5-hint",el).disabled=true}
+    else if(misses>=MAX){over=true;played++;streak=0;fb.className="feedback no";fb.textContent=`The hacker got through! The word was ${w}.`;$("#g5-next",el).hidden=false;$("#g5-hint",el).disabled=true}
+  }
+  function guess(c){if(over||guessed.has(c))return;guessed.add(c);if(!w.includes(c))misses++;check();render()}
+  $("#g5-hint",el).onclick=()=>{if(over)return;const left=letters().filter(l=>!guessed.has(l));if(!left.length)return;guessed.add(left[Math.floor(Math.random()*left.length)]);misses++;check();render()};
+  $("#g5-next",el).onclick=next;
+  document.addEventListener("keydown",e=>{if(el.hidden||e.metaKey||e.ctrlKey||e.altKey)return;const t=e.target;if(t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="BUTTON"||t.tagName==="SELECT"||t.tagName==="SUMMARY"||t.tagName==="A"))return;const k=e.key.toUpperCase();if(/^[A-Z]$/.test(k))guess(k);else if(e.key==="Enter"&&over)next()});
+  next();return{};
+};
+
+/* =============== GAME 8: MYTH OR FACT =============== */
+INIT.myth=function(el){
+  const Q=[
+    {s:"FedMSE sends all of your home's network traffic to a central server.",f:false,w:"Raw traffic stays in each building. Only the detector's learned numbers, plus one processed sample of normal traffic for the practice test, are shared."},
+    {s:"The detector learns using only examples of normal traffic.",f:true,w:"That's what \"semi‑supervised\" means here. It learns normal, and anything that doesn't fit gets flagged."},
+    {s:"An autoencoder usually copies attack traffic badly.",f:true,w:"It only learned the shape of normal traffic, so an attack produces a big copy error."},
+    {s:"The building with the most data always has the best detector.",f:false,w:"On lopsided networks, a big building may have seen mostly one device type. That's why MSEAvg trusts practice‑test results, not size."},
+    {s:"MSEAvg gives more trust to detectors that make fewer mistakes on a shared practice test.",f:true,w:"Trust = 1 ÷ MSE. Fewer mistakes means more trust."},
+    {s:"Every building must take part in every training round.",f:false,w:"The paper picks half the buildings each round. FedMSE was already at its best with 50%, which saves time and energy."},
+    {s:"FedMSE can only catch attacks it has seen before.",f:false,w:"It never sees attacks during training. It flags anything far from normal, so in principle it can catch new kinds of attack too. (The paper tested it on two botnets, Mirai and Gafgyt.)"},
+    {s:"The Shrink Autoencoder pulls normal traffic close to the centre of the map.",f:true,w:"A penalty for being far from the centre packs normal traffic into a tight ball, so attacks stand out."},
+    {s:"On very lopsided networks, FedMSE scored about 97% while an older method scored about 94%.",f:true,w:"97.30% vs 93.98% AUC (Table 2). Most of the gain comes from the Shrink autoencoder; the MSEAvg rule mainly made results more consistent across buildings."},
+    {s:"When all buildings see similar data, a basic autoencoder already works well.",f:true,w:"In the even setting, the basic autoencoder with FedAvg scored about 99%. FedMSE shines when data is lopsided."},
+    {s:"Mirai and Gafgyt are two types of IoT botnet malware.",f:true,w:"The paper uses the N‑BaIoT dataset: real traffic from 9 smart devices. All 9 have Gafgyt traffic, and 6 of them also have Mirai traffic."},
+    {s:"The authors say FedMSE is finished and has no limitations.",f:false,w:"They list several: only one dataset and two botnets were tested, the network was simulated, settings couldn't be tuned without attack data, and MSEAvg adds extra work for the server (Section 6)."},
+    {s:"To catch intruders, the building still needs the decoder (rebuilding half).",f:false,w:"After training, the decoder is removed. The encoder squeezes the message and the centroid check measures distance."}
+  ];
+  const R=10;let deck=[],i=0,score=0,answered=false;
+  function start(){deck=shuffle(Q).slice(0,R);i=0;score=0;load()}
+  function hud(n){$("#mf-hud",el).innerHTML=`<span>Question <b>${n}/${R}</b></span><span class="good">Correct <b>${score}</b></span>`}
+  function load(){answered=false;$("#mf-myth",el).disabled=false;$("#mf-fact",el).disabled=false;$("#mf-next",el).hidden=true;
+    const fb=$("#mf-fb",el);fb.className="feedback";fb.textContent="Make your call.";
+    hud(i+1);$("#mf-card",el).innerHTML=`<div class="eyebrow">Myth or fact?</div><div class="stmt">${esc(deck[i].s)}</div>`}
+  function answer(fact){
+    if(answered)return;answered=true;const q=deck[i],ok=fact===q.f;if(ok)score++;
+    $("#mf-myth",el).disabled=true;$("#mf-fact",el).disabled=true;
+    const fb=$("#mf-fb",el);fb.className="feedback "+(ok?"ok":"no");
+    fb.innerHTML=`<b>${ok?"Correct!":"Not quite."} It's a ${q.f?"fact":"myth"}.</b> ${esc(q.w)}`;
+    hud(i+1);i++;const nb=$("#mf-next",el);nb.hidden=false;
+    if(i>=R){nb.textContent="Play again";fb.innerHTML+=`<br><b>Final score: ${score}/${R}.</b> ${score>=7?"Badge earned! You understand the paper.":"Score 7 or more for the badge."}`;if(score>=7)award("myth")}
+    else nb.textContent="Next";
+  }
+  $("#mf-myth",el).onclick=()=>answer(false);$("#mf-fact",el).onclick=()=>answer(true);
+  $("#mf-next",el).onclick=()=>{if(i>=R)start();else load()};
+  start();return{};
+};
+
+renderBadges();show();
+})();
+</script>
