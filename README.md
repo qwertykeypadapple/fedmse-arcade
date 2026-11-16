@@ -17,6 +17,14 @@ Eight short browser games that explain the research paper
 
 ## Play
 
-Open `fedmse_arcade.html` in any modern browser. It is a single self-contained file with no build step.
+Play online: https://qwertykeypadapple.github.io/fedmse-arcade/
+
+Or open `index.html` in any modern browser. It is a single self-contained file with no build step.
+
+`fedmse_arcade.html` is the source (the same page without the `<!doctype html>` wrapper). After editing it, rebuild `index.html` with:
+
+```bash
+{ printf '<!doctype html>\n<html lang="en">\n'; cat fedmse_arcade.html; printf '\n</html>\n'; } > index.html
+```
 
 Some visuals (the dartboard in game 4, the 8-bar messages in game 1) are simplified teaching models, not the paper's real model. The page says where.
